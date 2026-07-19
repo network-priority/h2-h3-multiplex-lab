@@ -21,6 +21,7 @@ requests**.
 
 ## Try it
 
+- **Live demo:** open the [hosted HTTP/2 &amp; HTTP/3 Multiplex Lab](https://network-priority.github.io/h2-h3-multiplex-lab/) and start experimenting — no install required.
 - **Locally:** clone or download this repository and open `index.html` directly in a
   modern browser. Because it uses ES modules, some browsers restrict `file://` module
   loading, so serving statically is more reliable:
