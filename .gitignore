@@ -1,0 +1,17 @@
+# Dependencies (there are none, but guard against accidental installs)
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Build / coverage output
+coverage/
+dist/
+*.log

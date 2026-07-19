@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Multiplex lab">
+  <rect width="64" height="64" rx="12" fill="#556b2f"/>
+  <!-- three multiplexed streams over one connection -->
+  <rect x="10" y="14" width="30" height="7" rx="3.5" fill="#c9a227"/>
+  <rect x="10" y="28" width="44" height="7" rx="3.5" fill="#e8dfc4"/>
+  <rect x="10" y="42" width="22" height="7" rx="3.5" fill="#b87333"/>
+  <circle cx="52" cy="17.5" r="3.5" fill="#e8dfc4"/>
+  <circle cx="36" cy="45.5" r="3.5" fill="#e8dfc4"/>
+</svg>

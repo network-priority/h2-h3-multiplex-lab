@@ -1,0 +1,33 @@
+{
+  "name": "h2-h3-multiplex-lab",
+  "version": "1.0.0",
+  "description": "Interactive, zero-dependency lab that visually compares how the same page assets load under HTTP/1.1, HTTP/2 and HTTP/3 (QUIC) - multiplexing, connection limits, head-of-line blocking and stream prioritization.",
+  "type": "module",
+  "keywords": [
+    "http2",
+    "http3",
+    "quic",
+    "multiplexing",
+    "head-of-line-blocking",
+    "stream-prioritization",
+    "waterfall",
+    "web-performance",
+    "simulator",
+    "educational"
+  ],
+  "license": "MIT",
+  "author": "Network Priority",
+  "homepage": "https://www.network-priority.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/network-priority/h2-h3-multiplex-lab"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8080"
+  },
+  "//start": "No runtime dependencies. Open index.html directly, or serve statically with 'npm start' (python3) or 'npx --yes serve'.",
+  "engines": {
+    "node": ">=18"
+  }
+}

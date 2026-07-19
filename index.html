@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTTP/2 &amp; HTTP/3 Multiplex Lab</title>
+    <meta
+      name="description"
+      content="An interactive lab comparing how the same page assets load under HTTP/1.1, HTTP/2 and HTTP/3 (QUIC): connection limits, multiplexing, head-of-line blocking and stream prioritization."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="site-header">
+        <div>
+          <h1>HTTP/2 &amp; HTTP/3 Multiplex Lab</h1>
+          <p class="tagline">
+            Watch the <strong>same set of assets</strong> load three ways - HTTP/1.1, HTTP/2 and
+            HTTP/3 (QUIC) - and see how connection limits, multiplexing, head-of-line blocking and
+            stream prioritization change the picture.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button id="themeToggle" type="button" aria-pressed="false">Dark mode</button>
+        </div>
+      </header>
+
+      <!-- Controls -->
+      <section class="card" aria-labelledby="controls-h">
+        <h2 id="controls-h">Workload &amp; network</h2>
+
+        <div class="preset-row">
+          <div class="control">
+            <label for="preset">Preset workload</label>
+            <select id="preset" aria-label="Preset workload"></select>
+          </div>
+          <p id="presetDesc" class="preset-desc"></p>
+        </div>
+
+        <div class="controls-grid">
+          <div class="control">
+            <label for="rtt">Network RTT <output id="rttOut">60 ms</output></label>
+            <input id="rtt" type="range" min="5" max="300" step="5" value="60" />
+          </div>
+          <div class="control">
+            <label for="bandwidth">Bandwidth <output id="bandwidthOut">20 Mbps</output></label>
+            <input id="bandwidth" type="range" min="1" max="200" step="1" value="20" />
+          </div>
+          <div class="control">
+            <label for="loss">Packet loss <output id="lossOut">1 %</output></label>
+            <input id="loss" type="range" min="0" max="10" step="0.5" value="1" />
+          </div>
+          <div class="control">
+            <label for="ttfb">Server TTFB <output id="ttfbOut">40 ms</output></label>
+            <input id="ttfb" type="range" min="0" max="300" step="5" value="40" />
+          </div>
+          <div class="control">
+            <label for="seed">Loss seed <output id="seedOut" class="visually-hidden"></output></label>
+            <input id="seed" type="number" min="0" step="1" value="12345" aria-label="Loss pattern seed" />
+          </div>
+          <div class="control" id="shardRow">
+            <label for="shardCount">H1 domain shards <output id="shardCountOut">2x</output></label>
+            <input id="shardCount" type="range" min="1" max="4" step="1" value="2" />
+          </div>
+        </div>
+
+        <div class="toggles" role="group" aria-label="Simulation toggles">
+          <label class="toggle"><input id="h2Priority" type="checkbox" checked /> HTTP/2 &amp; HTTP/3 stream priority</label>
+          <label class="toggle"><input id="sharding" type="checkbox" /> HTTP/1.1 domain sharding</label>
+          <label class="toggle"><input id="zeroRtt" type="checkbox" /> HTTP/3 0-RTT resumption</label>
+        </div>
+      </section>
+
+      <!-- Asset editor -->
+      <section class="card" aria-labelledby="assets-h">
+        <h2 id="assets-h">Assets</h2>
+        <div class="table-scroll">
+          <table class="assets">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Size (KB)</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Origin</th>
+                <th scope="col"><span class="visually-hidden">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="assetBody"></tbody>
+          </table>
+        </div>
+        <p style="margin-top: 0.7rem">
+          <button id="addRow" type="button">+ Add asset</button>
+        </p>
+      </section>
+
+      <!-- Playback -->
+      <section class="card" aria-labelledby="playback-h">
+        <h2 id="playback-h">Playback</h2>
+        <div class="playback" id="playback">
+          <button id="playPause" class="primary" type="button" aria-pressed="false">Play</button>
+          <button id="stepBtn" type="button">Step</button>
+          <button id="resetBtn" type="button">Reset</button>
+          <span class="grow">
+            <label for="speed" style="white-space: nowrap">Speed <output id="speedOut">1x</output></label>
+            <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" aria-label="Animation speed" />
+          </span>
+          <span class="grow">
+            <label for="scrubber" class="visually-hidden">Timeline position</label>
+            <input id="scrubber" type="range" min="0" max="1000" step="1" value="0" aria-label="Scrub timeline" />
+          </span>
+          <span id="clock">0 ms</span>
+        </div>
+        <p id="reducedNote" class="reduced-note" hidden>
+          Reduced-motion is on, so the timelines are shown fully loaded (no animation).
+        </p>
+      </section>
+
+      <!-- Waterfalls -->
+      <div id="panels" class="panels"></div>
+
+      <!-- Legend -->
+      <section class="card">
+        <div id="legend" class="legend"></div>
+      </section>
+
+      <!-- Narrative -->
+      <section class="card" aria-labelledby="narrative-h">
+        <h2 id="narrative-h">What happened</h2>
+        <div id="narrative" class="narrative"></div>
+      </section>
+
+      <!-- Model explanation -->
+      <section class="card">
+        <details class="model">
+          <summary>How the simulation model works</summary>
+          <div class="model">
+            <p>
+              This lab is a <strong>teaching model</strong>, not a packet-accurate emulator. It
+              reproduces the behaviours that distinguish the protocols so you can build intuition.
+            </p>
+            <dl>
+              <dt>Connection setup</dt>
+              <dd>
+                HTTP/1.1 and HTTP/2 run over TCP + TLS and pay roughly two round trips before the
+                first request. HTTP/3 runs over QUIC and needs one round trip - or zero with 0-RTT
+                resumption. HTTP/1.1 opens up to six connections per origin (more with domain
+                sharding); HTTP/2 and HTTP/3 multiplex everything over a single connection per origin.
+              </dd>
+              <dt>Bandwidth sharing</dt>
+              <dd>
+                The client link is the bottleneck. All streams downloading at a given moment split
+                the available bandwidth; a stream finishes when its bytes have been transferred.
+              </dd>
+              <dt>Head-of-line (HOL) blocking</dt>
+              <dd>
+                Packet loss is turned into discrete loss events, placed deterministically from the
+                seed so every protocol sees the <em>same</em> pattern. On HTTP/1.1 a stalled response
+                blocks that connection's queue. On HTTP/2 a loss stalls the whole TCP connection for
+                one RTT - every multiplexed stream freezes. On HTTP/3 a loss stalls only its own QUIC
+                stream; the others keep flowing.
+              </dd>
+              <dt>Priority</dt>
+              <dd>
+                With prioritization on, high-priority assets get a larger share of the link on HTTP/2
+                and HTTP/3 and finish first. HTTP/1.1 ignores priority (first-come, first-served per
+                connection).
+              </dd>
+              <dt>Determinism</dt>
+              <dd>
+                A seeded pseudo-random generator fixes the loss pattern, so the three protocols are
+                always compared on identical conditions and every run is reproducible.
+              </dd>
+            </dl>
+            <p class="disclaimer">
+              Numbers are illustrative. Real networks add congestion control, TLS false start, HPACK/QPACK,
+              server push, connection coalescing and much more. Use this to understand the
+              <em>shape</em> of the differences, not to predict exact load times.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <!-- Further reading -->
+      <section class="card" aria-labelledby="reading-h">
+        <h2 id="reading-h">Further reading</h2>
+        <p>Deeper explanations of everything this lab demonstrates:</p>
+        <ul id="furtherReading" class="further-reading"></ul>
+      </section>
+
+      <footer class="site-footer">
+        <span>An educational lab by
+          <a href="https://www.network-priority.com" target="_blank" rel="noopener">network-priority.com</a>.
+        </span>
+        <span>
+          <a href="https://github.com/network-priority/h2-h3-multiplex-lab" target="_blank" rel="noopener">Source on GitHub</a>
+          &middot; MIT licensed
+        </span>
+      </footer>
+    </div>
+
+    <script type="module" src="js/ui.js"></script>
+  </body>
+</html>
